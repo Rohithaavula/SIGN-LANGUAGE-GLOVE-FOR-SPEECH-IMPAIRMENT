@@ -1,0 +1,122 @@
+#include <SoftwareSerial.h>
+#include "talkie.h"
+SoftwareSerial mySerial(5,4);
+Talkie voice;
+char temp = '0';
+const int ledPin1 = 6;   //pin 2 has PWM funtion
+const int ledPin2 = 7;   //pin 3 has PWM funtion
+const uint8_t spHELLO[]  PROGMEM ={0x00,0xC0,0x80,
+0x60,0x59,0x08,0x10,0x3D,0xB7,0x00,0x62,0x64,0x3D,
+0x55,0x4A,0x9E,0x66,0xDA,0xF6,0x56,0xB7,0x3A,0x55,
+0x76,0xDA,0xED,0x92,0x75,0x57,0xA3,0x88,0xA8,0xAB,
+0x02,0xB2,0xF4,0xAC,0x67,0x23,0x73,0xC6,0x2F,0x0C,
+0xF3,0xED,0x62,0xD7,0xAD,0x13,0xA5,0x46,0x8C,0x57,
+0xD7,0x21,0x0C,0x22,0x4F,0x93,0x4B,0x27,0x37,0xF0,
+0x51,0x69,0x98,0x9D,0xD4,0xC8,0xFB,0xB8,0x98,0xB9,
+0x56,0x23,0x2F,0x93,0xAA,0xE2,0x46,0x8C,0x52,0x57,
+0x66,0x2B,0x8C,0x07};
+//variable initializtion
+int xpin = A2;
+int xadc = 0;
+int xmax = 0;
+int xmin = 1023;
+int ypin = A3;
+int yadc = 0;
+int ymax = 0;
+int ymin = 1023;
+int FLEX_PIN1 = A0; 
+int flexADC1 = 0; 
+int sensorMin1 = 1023; 
+int sensorMax1 = 0;
+int FLEX_PIN2 = A1; 
+int flexADC2 = 0; 
+int sensorMin2 = 1023; 
+int sensorMax2 = 0;
+void setup() 
+{
+mySerial.begin(9600);
+Serial.begin(9600);   
+pinMode(ledPin1, OUTPUT);  //Set pin 3 as 'output'
+Serial.begin(9600);       //Begin serial communication
+pinMode(ledPin2, OUTPUT);  //Set pin 4 as 'output'
+Serial.begin(9600); //Begin serial communication
+while (!Serial) 
+{
+; // wait for serial port to connect. Needed for native USB port only
+}
+while(millis()<15000)
+{
+if(digitalRead(7)==HIGH)
+{
+float flexADC1 = analogRead(FLEX_PIN1);
+float flexADC2 = analogRead(FLEX_PIN2);
+if(flexADC1<sensorMin1)
+{
+sensorMin1=flexADC1;
+}
+if(flexADC1>sensorMax1)
+{
+sensorMax1=flexADC1;
+}
+if(flexADC2<sensorMin2)
+{
+sensorMin2=flexADC2;
+}
+if(flexADC2>sensorMax2)
+{
+sensorMax2=flexADC2;
+}
+}
+}
+}
+void printfun(char cp[]) //to avoid printing repeating symbols
+{
+if(cp!=temp)
+{
+mySerial.print(cp);   //bluetooth
+Serial.println(cp); // serial terminal
+temp=cp;
+}
+}
+void loop() 
+{
+// reading sensor value
+float flexADC1 = analogRead(FLEX_PIN1);
+float flexADC2 = analogRead(FLEX_PIN2);
+  Serial.println(flexADC1);               //Print value of flex 1
+  analogWrite(ledPin1, flexADC1);          //Send PWM value to led 1
+  delay(100);                          //Small delay
+Serial.println(flexADC2);               //Print value of flex 2
+  analogWrite(ledPin2, flexADC2);          //Send PWM value to led 2
+  delay(100);                        //Small delay
+pinMode(3,OUTPUT);                // speaker tone
+      tone(3, 1500);
+      delay(200);
+      noTone(3);
+      delay(200);
+voice.say(spHELLO);
+delay(200);
+flexADC1 = constrain(flexADC1,sensorMin1, sensorMax1);
+flexADC2 = constrain(flexADC2,sensorMin2, sensorMax2);
+float angle1= map(flexADC1, sensorMin1, sensorMax1, 0, 90);
+float angle2= map(flexADC2, sensorMin2, sensorMax2, 0, 90);
+xadc = analogRead(xpin);
+yadc = analogRead(ypin);
+if(((angle1>=5)&&(angle1<=9))&&((angle2>=5)&&(angle2<=9)))
+printfun("Good Morning");
+if(((angle1>=0)&&(angle1<=4))&&((angle2>=0)&&(angle2<=4)))
+printfun("Hello");
+if(((angle1>=10)&&(angle1<=15))&&((angle2>=10)&&(angle2<=15)))
+printfun("I want water");
+if(((angle1>=50)&&(angle1<=72))&&((angle2>=45)&&(angle2<=90)))
+printfun("I want food");
+if(((angle1>=68)&&(angle1<=88))&&((angle2>=68)&&(angle2<=90)))
+printfun("Thank you");
+if(((angle1>=75)&&(angle1<=90))&&((angle2>=75)&&(angle2<=90)))
+printfun("I am sick");
+if(((angle1>=50)&&(angle1<=72))&&((angle2>=45)&&(angle2<=90))&&!(((xadc>=412)&&(xadc<=418))&&((yadc>=340)&&(yadc<=360))))
+printfun("Nice");
+if(((angle1>=75)&&(angle1<=90))&&((angle2>=75)&&(angle2<=90))&&(((xadc>=400)&&(xadc<=420))&&((yadc>=340)&&(yadc<=360))))
+printfun("Bye");
+delay(200);
+}
